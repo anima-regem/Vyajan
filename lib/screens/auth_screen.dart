@@ -46,8 +46,12 @@ class _AuthScreenState extends State<AuthScreen> {
             children: [
               // App Name
               Text(
-                'Vyajan',
-                style: Theme.of(context).textTheme.headlineMedium,
+                'വ്യാജൻ',
+                style: Theme.of(context).textTheme.headlineLarge!.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).colorScheme.primary,
+                      fontSize: 58,
+                    ),
                 textAlign: TextAlign.center,
               ),
               SizedBox(height: 32),

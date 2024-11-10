@@ -45,6 +45,9 @@ dependencies:
   flutter_zoom_drawer: ^3.1.1
   flutter_launcher_icons: ^0.14.1
   launcher_name: ^1.0.2
+  http: ^1.2.2
+  cached_network_image: ^3.4.1
+  hugeicons: ^0.0.7
 
 
 dev_dependencies:

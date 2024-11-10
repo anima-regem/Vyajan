@@ -62,16 +62,9 @@ class DatabaseService {
     required String url,
     required String title,
     required bool isPermanent,
+    required bool isArchived,
     required String userId,
   }) async {
-    // Fetch metadata
-    Metadata? metadata;
-    try {
-      metadata = await MetadataFetch.extract(url);
-    } catch (e) {
-      print('Error fetching metadata: $e');
-    }
-
     final docRef = await _db.collection(_linksCollection).add({
       'url': url,
       'title': title,
@@ -79,9 +72,6 @@ class DatabaseService {
       'isArchived': false,
       'createdAt': Timestamp.now(),
       'userId': userId,
-      'metadataTitle': metadata?.title,
-      'metadataDescription': metadata?.description,
-      'metadataImage': metadata?.image,
     });
 
     return docRef.id;
@@ -98,6 +88,7 @@ class DatabaseService {
   // Update link metadata
   Future<void> updateMetadata(String linkId, Metadata metadata) async {
     await _db.collection(_linksCollection).doc(linkId).update({
+      'title': metadata.title,
       'metadataTitle': metadata.title,
       'metadataDescription': metadata.description,
       'metadataImage': metadata.image,

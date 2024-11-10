@@ -13,7 +13,8 @@ import 'package:flutter/services.dart';
 enum LinkSection {
   all,
   important,
-  archive;
+  archive,
+  signout;
 
   String get title {
     switch (this) {
@@ -23,6 +24,8 @@ enum LinkSection {
         return 'Important';
       case LinkSection.archive:
         return 'Archive';
+      case LinkSection.signout:
+        return 'Sign Out';
     }
   }
 
@@ -34,6 +37,8 @@ enum LinkSection {
         return Icons.star;
       case LinkSection.archive:
         return Icons.archive;
+      case LinkSection.signout:
+        return Icons.logout;
     }
   }
 }
@@ -47,7 +52,6 @@ class _HomeScreenState extends State<HomeScreen> {
   final AuthService _authService = AuthService();
   LinkSection _currentSection = LinkSection.all;
   final DatabaseService _dbService = DatabaseService();
-
   final TextEditingController _linkController = TextEditingController();
   bool _isImportant = false;
 
@@ -58,6 +62,10 @@ class _HomeScreenState extends State<HomeScreen> {
     } else {
       throw 'Could not launch $url';
     }
+  }
+
+  Future<void> _signOut() async {
+    await _authService.signOut();
   }
 
   Future<void> _showMetadataDialog(BuildContext context, LinkItem link) async {
@@ -498,6 +506,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     allLinks.where((link) => link.isPermanent).toList(),
                   LinkSection.archive =>
                     allLinks.where((link) => link.isArchived).toList(),
+                  LinkSection.signout => [],
                 };
 
                 return Column(
@@ -975,11 +984,46 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
       bottomNavigationBar: NavigationBar(
-        selectedIndex: LinkSection.values.indexOf(_currentSection),
-        onDestinationSelected: (index) {
-          setState(() {
-            _currentSection = LinkSection.values[index];
-          });
+        selectedIndex: _currentSection == LinkSection.signout
+            ? LinkSection.values
+                .indexOf(LinkSection.all) // Always show 'all' as selected
+            : LinkSection.values.indexOf(_currentSection),
+        onDestinationSelected: (index) async {
+          final selectedSection = LinkSection.values[index];
+
+          if (selectedSection == LinkSection.signout) {
+            // Show confirmation dialog
+            final bool? confirm = await showDialog<bool>(
+              context: context,
+              builder: (context) => AlertDialog(
+                title: const Text('Sign Out'),
+                content: const Text('Are you sure you want to sign out?'),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(false),
+                    child: const Text('Cancel'),
+                  ),
+                  ElevatedButton(
+                    onPressed: () => Navigator.of(context).pop(true),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Theme.of(context).primaryColor,
+                    ),
+                    child: const Text('Sign Out'),
+                  ),
+                ],
+              ),
+            );
+
+            if (confirm == true) {
+              await _authService.signOut();
+              // No need to update _currentSection since the auth state change
+              // will trigger a rebuild showing the sign-in screen
+            }
+          } else {
+            setState(() {
+              _currentSection = selectedSection;
+            });
+          }
         },
         destinations: LinkSection.values.map((section) {
           return NavigationDestination(

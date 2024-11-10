@@ -1,5 +1,6 @@
 // lib/screens/auth_screen.dart
 import 'package:flutter/material.dart';
+import 'package:hugeicons/hugeicons.dart';
 import '../services/auth_service.dart';
 
 class AuthScreen extends StatefulWidget {
@@ -64,7 +65,7 @@ class _AuthScreenState extends State<AuthScreen> {
 
               // Google Sign In Button
               OutlinedButton.icon(
-                icon: Icon(Icons.g_mobiledata),
+                icon: Icon(HugeIcons.strokeRoundedGoogle),
                 label: _isLoading
                     ? SizedBox(
                         height: 20,

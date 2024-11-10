@@ -13,12 +13,12 @@ bool isInstagramUrl(String url) {
 }
 
 bool isTwitterUrl(String url) {
-  return url.toLowerCase().contains('twitter.com/') ||
+  return url.toLowerCase().contains('twitter.com') ||
       url.toLowerCase().contains('x.com');
 }
 
 bool isLinkedInUrl(String url) {
-  return url.toLowerCase().contains('linkedin.com/');
+  return url.toLowerCase().contains('linkedin.com');
 }
 
 bool isValidUrl(String url) {
@@ -153,10 +153,8 @@ Future<bool> _isImageAvailable(String url) async {
 Future<String?> getInstagramThumbnail(String url) async {
   try {
     final uri = Uri.parse(url.trim());
-    print('\nTrying to get thumbnail for: $url');
 
     if (uri.host != 'www.instagram.com' && uri.host != 'instagram.com') {
-      print('❌ Invalid host: ${uri.host}');
       return null;
     }
 
@@ -165,11 +163,9 @@ Future<String?> getInstagramThumbnail(String url) async {
     // Check if it's a post
     if (pathSegments.contains('p')) {
       final contentId = pathSegments[pathSegments.indexOf('p') + 1];
-      print('\n📝 Post ID: $contentId');
 
       final thumbnailUrl =
           'https://www.instagram.com/p/$contentId/media/?size=t';
-      print('\n🔍 Using thumbnail URL: $thumbnailUrl');
 
       return thumbnailUrl;
     }
@@ -178,6 +174,74 @@ Future<String?> getInstagramThumbnail(String url) async {
     return null;
   } catch (e) {
     print('\n❌ Error: $e');
+    return null;
+  }
+}
+
+class TwitterData {
+  final String? html;
+  final String? text;
+  final String? authorName;
+
+  TwitterData({
+    this.html,
+    this.text,
+    this.authorName,
+  });
+
+  @override
+  String toString() {
+    return 'TwitterData(authorName: $authorName, text: $text';
+  }
+}
+
+Future<TwitterData?> getTwitterData(String url) async {
+  try {
+    final uri = Uri.parse(url.trim());
+
+    if (uri.host != 'twitter.com' && uri.host != 'x.com') {
+      return null;
+    }
+
+    final pathSegments = uri.pathSegments;
+
+    // Check if it's a tweet
+    if (pathSegments.contains('status')) {
+      final username = pathSegments[0];
+      final contentId = pathSegments[pathSegments.indexOf('status') + 1];
+
+      // Construct the full tweet URL and encode it
+      final tweetUrl = 'https://twitter.com/$username/status/$contentId';
+      final encodedUrl = Uri.encodeComponent(tweetUrl);
+
+      // Create oEmbed API URL with maxwidth to ensure we get the largest possible preview
+      final oembedUrl =
+          'https://publish.twitter.com/oembed?url=$encodedUrl&omit_script=true&maxwidth=550';
+
+      final response = await http.get(Uri.parse(oembedUrl));
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final html = data['html'] as String?;
+        final authorName = data['author_name'] as String?;
+
+        // Extract text content from HTML
+        final textContent = html?.replaceAll(RegExp(r'<[^>]*>'), '').trim();
+        if (textContent != null) {}
+
+        return TwitterData(
+          html: html,
+          text: textContent,
+          authorName: authorName,
+        );
+      } else {
+        return null;
+      }
+    }
+
+    return null;
+  } catch (e) {
+    print('\nError: $e');
     return null;
   }
 }

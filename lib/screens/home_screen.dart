@@ -70,183 +70,318 @@ class _HomeScreenState extends State<HomeScreen> {
             maxHeight: MediaQuery.of(context).size.height * 0.8,
             maxWidth: 600,
           ),
-          child: FutureBuilder<Metadata?>(
-            future: MetadataFetch.extract(link.url),
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(
-                  child: CircularProgressIndicator(),
-                );
-              }
+          child: isTwitterUrl(link.url)
+              ? FutureBuilder<TwitterData?>(
+                  future: getTwitterData(link.url),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(
+                        child: CircularProgressIndicator(),
+                      );
+                    }
 
-              if (snapshot.hasError || !snapshot.hasData) {
-                return Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Error',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      const Text('Could not fetch metadata for this link'),
-                      const SizedBox(height: 16),
-                      ButtonBar(
+                    if (snapshot.hasError || !snapshot.hasData) {
+                      return _buildErrorView(context, link);
+                    }
+
+                    final tweetData = snapshot.data!;
+                    return Material(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          TextButton(
-                            onPressed: () => Navigator.pop(context),
-                            child: const Text('Close'),
-                          ),
-                          ElevatedButton(
-                            onPressed: () {
-                              Navigator.pop(context);
-                              _launchURL(link.url);
-                            },
-                            child: const Text('Open Link Anyway'),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                );
-              }
-
-              final metadata = snapshot.data!;
-              final title = metadata.title ?? 'No Title';
-              final bool showTitleInHeader =
-                  title.length <= 50; // Adjust threshold as needed
-
-              return Material(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Header (only shows short titles)
-                    if (showTitleInHeader) ...[
-                      Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Text(
-                          title,
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                      const Divider(height: 1),
-                    ],
-
-                    // Scrollable content
-                    Expanded(
-                      child: Scrollbar(
-                        thumbVisibility: true,
-                        child: SingleChildScrollView(
-                          padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              // Show title in content area if it's long
-                              if (!showTitleInHeader) ...[
-                                SelectableText(
-                                  title,
-                                  style: const TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                    height: 1.4,
+                          // Header with author
+                          if (tweetData.authorName != null) ...[
+                            Padding(
+                              padding: const EdgeInsets.all(16.0),
+                              child: Row(
+                                children: [
+                                  const Icon(
+                                    HugeIcons.strokeRoundedTwitter,
+                                    color: Colors.grey,
+                                    size: 20,
                                   ),
-                                ),
-                                const SizedBox(height: 16),
-                              ],
-                              if (metadata.image != null) ...[
-                                Container(
-                                  constraints:
-                                      const BoxConstraints(maxHeight: 200),
-                                  width: double.infinity,
-                                  child: ClipRRect(
-                                    borderRadius: BorderRadius.circular(8),
-                                    child: Image.network(
-                                      metadata.image!,
-                                      fit: BoxFit.cover,
-                                      errorBuilder:
-                                          (context, error, stackTrace) =>
-                                              const Icon(Icons.broken_image,
-                                                  size: 100),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    tweetData.authorName!,
+                                    style: const TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
                                     ),
                                   ),
-                                ),
-                                const SizedBox(height: 16),
-                              ],
-                              if (metadata.description != null) ...[
-                                const Text(
-                                  'Description',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 14,
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                SelectableText(
-                                  metadata.description!,
-                                  style: const TextStyle(
-                                    fontSize: 14,
-                                    height: 1.4,
-                                  ),
-                                ),
-                                const SizedBox(height: 16),
-                              ],
-                              const Text(
-                                'URL',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 14,
-                                ),
+                                ],
                               ),
-                              const SizedBox(height: 8),
-                              SelectableText(
-                                link.url,
-                                style: const TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.blue,
-                                  height: 1.4,
-                                ),
-                              ),
-                              const SizedBox(height: 16),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
+                            ),
+                            const Divider(height: 1),
+                          ],
 
-                    // Actions
-                    const Divider(height: 1),
-                    Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: ButtonBar(
-                        children: [
-                          TextButton(
-                            onPressed: () => Navigator.pop(context),
-                            child: const Text('Close'),
+                          // Tweet content
+                          Expanded(
+                            child: Scrollbar(
+                              thumbVisibility: true,
+                              child: SingleChildScrollView(
+                                padding:
+                                    const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    if (tweetData.text != null) ...[
+                                      SelectableText(
+                                        tweetData.text!,
+                                        style: const TextStyle(
+                                          fontSize: 16,
+                                          height: 1.4,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 16),
+                                    ],
+                                    const Text(
+                                      'URL',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    SelectableText(
+                                      link.url,
+                                      style: const TextStyle(
+                                        fontSize: 14,
+                                        color: Colors.blue,
+                                        height: 1.4,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 16),
+                                  ],
+                                ),
+                              ),
+                            ),
                           ),
-                          ElevatedButton(
-                            onPressed: () {
-                              Navigator.pop(context);
-                              _launchURL(link.url);
-                            },
-                            child: const Text('Open Link'),
+
+                          // Actions
+                          const Divider(height: 1),
+                          Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: ButtonBar(
+                              children: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(context),
+                                  child: const Text('Close'),
+                                ),
+                                ElevatedButton(
+                                  onPressed: () {
+                                    Navigator.pop(context);
+                                    _launchURL(link.url);
+                                  },
+                                  child: const Text('Open in Twitter'),
+                                ),
+                              ],
+                            ),
                           ),
                         ],
                       ),
-                    ),
-                  ],
+                    );
+                  },
+                )
+              : FutureBuilder<Metadata?>(
+                  future: MetadataFetch.extract(link.url),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(
+                        child: CircularProgressIndicator(),
+                      );
+                    }
+
+                    if (snapshot.hasError || !snapshot.hasData) {
+                      return _buildErrorView(context, link);
+                    }
+
+                    final metadata = snapshot.data!;
+                    final title = metadata.title ?? 'No Title';
+                    final bool showTitleInHeader = title.length <= 50;
+
+                    return Material(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (showTitleInHeader) ...[
+                            Padding(
+                              padding: const EdgeInsets.all(16.0),
+                              child: Text(
+                                title,
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                            const Divider(height: 1),
+                          ],
+                          Expanded(
+                            child: Scrollbar(
+                              thumbVisibility: true,
+                              child: SingleChildScrollView(
+                                padding:
+                                    const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    if (!showTitleInHeader) ...[
+                                      SelectableText(
+                                        title,
+                                        style: const TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold,
+                                          height: 1.4,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 16),
+                                    ],
+                                    if (metadata.image != null) ...[
+                                      Container(
+                                        width: double.infinity,
+                                        constraints: BoxConstraints(
+                                          maxWidth:
+                                              MediaQuery.of(context).size.width,
+                                        ),
+                                        child: ClipRRect(
+                                          borderRadius:
+                                              BorderRadius.circular(8),
+                                          child: Image.network(
+                                            metadata.image!,
+                                            fit: BoxFit.contain,
+                                            alignment: Alignment.center,
+                                            errorBuilder: (context, error,
+                                                    stackTrace) =>
+                                                const Icon(Icons.broken_image,
+                                                    size: 100),
+                                            loadingBuilder: (context, child,
+                                                loadingProgress) {
+                                              if (loadingProgress == null) {
+                                                return child;
+                                              }
+                                              return Container(
+                                                height: 200,
+                                                alignment: Alignment.center,
+                                                child:
+                                                    CircularProgressIndicator(
+                                                  value: loadingProgress
+                                                              .expectedTotalBytes !=
+                                                          null
+                                                      ? loadingProgress
+                                                              .cumulativeBytesLoaded /
+                                                          loadingProgress
+                                                              .expectedTotalBytes!
+                                                      : null,
+                                                ),
+                                              );
+                                            },
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 16),
+                                    ],
+                                    if (metadata.description != null) ...[
+                                      const Text(
+                                        'Description',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      SelectableText(
+                                        metadata.description!,
+                                        style: const TextStyle(
+                                          fontSize: 14,
+                                          height: 1.4,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 16),
+                                    ],
+                                    const Text(
+                                      'URL',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    SelectableText(
+                                      link.url,
+                                      style: const TextStyle(
+                                        fontSize: 14,
+                                        color: Colors.blue,
+                                        height: 1.4,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 16),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                          const Divider(height: 1),
+                          Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: ButtonBar(
+                              children: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(context),
+                                  child: const Text('Close'),
+                                ),
+                                ElevatedButton(
+                                  onPressed: () {
+                                    Navigator.pop(context);
+                                    _launchURL(link.url);
+                                  },
+                                  child: const Text('Open Link'),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
                 ),
-              );
-            },
-          ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildErrorView(BuildContext context, LinkItem link) {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Error',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 8),
+          const Text('Could not fetch metadata for this link'),
+          const SizedBox(height: 16),
+          ButtonBar(
+            children: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Close'),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  _launchURL(link.url);
+                },
+                child: const Text('Open Link Anyway'),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -620,10 +755,92 @@ class _HomeScreenState extends State<HomeScreen> {
                                                   url: link.url)
                                             else if (isInstagram)
                                               CachedInstagramThumbnail(
-                                                  url: link.url),
+                                                  url: link.url)
+                                            else if (isTwitterUrl(link.url))
+                                              FutureBuilder<TwitterData?>(
+                                                future:
+                                                    getTwitterData(link.url),
+                                                builder: (context, snapshot) {
+                                                  if (snapshot
+                                                          .connectionState ==
+                                                      ConnectionState.waiting) {
+                                                    return const Padding(
+                                                      padding:
+                                                          EdgeInsets.symmetric(
+                                                              horizontal: 16,
+                                                              vertical: 8),
+                                                      child: Center(
+                                                        child: SizedBox(
+                                                          height: 24,
+                                                          width: 24,
+                                                          child:
+                                                              CircularProgressIndicator(
+                                                                  strokeWidth:
+                                                                      2),
+                                                        ),
+                                                      ),
+                                                    );
+                                                  }
+
+                                                  if (snapshot.hasData &&
+                                                      snapshot.data?.text !=
+                                                          null) {
+                                                    return Container(
+                                                      width: double.infinity,
+                                                      padding: const EdgeInsets
+                                                          .fromLTRB(
+                                                          16, 12, 16, 8),
+                                                      child: Column(
+                                                        crossAxisAlignment:
+                                                            CrossAxisAlignment
+                                                                .start,
+                                                        children: [
+                                                          if (snapshot.data
+                                                                  ?.authorName !=
+                                                              null)
+                                                            Text(
+                                                              '🐦 ${snapshot.data!.authorName!}',
+                                                              style:
+                                                                  const TextStyle(
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .bold,
+                                                                fontSize: 13,
+                                                                color:
+                                                                    Colors.grey,
+                                                              ),
+                                                            ),
+                                                          if (snapshot.data
+                                                                  ?.authorName !=
+                                                              null)
+                                                            const SizedBox(
+                                                                height: 4),
+                                                          Text(
+                                                            snapshot
+                                                                .data!.text!,
+                                                            maxLines: 3,
+                                                            overflow:
+                                                                TextOverflow
+                                                                    .ellipsis,
+                                                            style:
+                                                                const TextStyle(
+                                                              fontSize: 13,
+                                                              height: 1.3,
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    );
+                                                  }
+                                                  return const SizedBox
+                                                      .shrink();
+                                                },
+                                              ),
                                             Padding(
                                               padding:
-                                                  const EdgeInsets.all(8.0),
+                                                  const EdgeInsets.symmetric(
+                                                      horizontal: 0,
+                                                      vertical: 4),
                                               child: ListTile(
                                                 title: Text(
                                                   maxLines: 4,
@@ -637,19 +854,20 @@ class _HomeScreenState extends State<HomeScreen> {
                                                         : FontWeight.normal,
                                                   ),
                                                 ),
-                                                subtitle:
-                                                    (!isYouTube && !isInstagram)
-                                                        ? Text(
-                                                            maxLines: 3,
-                                                            link.url,
-                                                            style: TextStyle(
-                                                              color: isValidLink
-                                                                  ? Colors.blue
-                                                                  : Colors.grey,
-                                                              fontSize: 12,
-                                                            ),
-                                                          )
-                                                        : null,
+                                                subtitle: (!isYouTube &&
+                                                        !isInstagram &&
+                                                        !isTwitterUrl(link.url))
+                                                    ? Text(
+                                                        maxLines: 3,
+                                                        link.url,
+                                                        style: TextStyle(
+                                                          color: isValidLink
+                                                              ? Colors.blue
+                                                              : Colors.grey,
+                                                          fontSize: 12,
+                                                        ),
+                                                      )
+                                                    : null,
                                                 leading: CircleAvatar(
                                                   backgroundColor:
                                                       link.isPermanent
@@ -662,10 +880,19 @@ class _HomeScreenState extends State<HomeScreen> {
                                                         : isInstagram
                                                             ? HugeIcons
                                                                 .strokeRoundedInstagram
-                                                            : isValidLink
-                                                                ? Icons.link
-                                                                : Icons
-                                                                    .text_snippet,
+                                                            : isTwitterUrl(
+                                                                    link.url)
+                                                                ? HugeIcons
+                                                                    .strokeRoundedTwitter
+                                                                : link.url.contains(
+                                                                        'linkedin.com')
+                                                                    ? HugeIcons
+                                                                        .strokeRoundedLinkedin01
+                                                                    : isValidLink
+                                                                        ? HugeIcons
+                                                                            .strokeRoundedLink01
+                                                                        : Icons
+                                                                            .text_snippet,
                                                     color: Colors.white,
                                                   ),
                                                 ),
@@ -673,17 +900,19 @@ class _HomeScreenState extends State<HomeScreen> {
                                                   mainAxisSize:
                                                       MainAxisSize.min,
                                                   children: [
-                                                    if (!isYouTube &&
-                                                        !isInstagram &&
-                                                        isValidLink)
-                                                      IconButton(
-                                                        icon: const Icon(
-                                                            Icons.open_in_new),
-                                                        onPressed: () =>
-                                                            _launchURL(
-                                                                link.url),
-                                                        tooltip: 'Open Link',
-                                                      ),
+                                                    // if (!isYouTube &&
+                                                    //     !isInstagram &&
+                                                    //     !isTwitterUrl(
+                                                    //         link.url) &&
+                                                    //     isValidLink)
+                                                    //   IconButton(
+                                                    //     icon: const Icon(
+                                                    //         Icons.open_in_new),
+                                                    //     onPressed: () =>
+                                                    //         _launchURL(
+                                                    //             link.url),
+                                                    //     tooltip: 'Open Link',
+                                                    //   ),
                                                     if (!isValidLink)
                                                       IconButton(
                                                         icon: const Icon(

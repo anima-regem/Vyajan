@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:hugeicons/hugeicons.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:metadata_fetch/metadata_fetch.dart';
-import 'package:vyajan/components/thumbnail.dart';
+import 'package:vyajan/components/add_link.dart';
 import 'package:vyajan/services/helpers.dart';
 import '../services/auth_service.dart';
 import '../services/database_service.dart';
@@ -32,18 +33,20 @@ enum LinkSection {
   IconData get icon {
     switch (this) {
       case LinkSection.all:
-        return Icons.link;
+        return HugeIcons.strokeRoundedLink01;
       case LinkSection.important:
-        return Icons.star;
+        return HugeIcons.strokeRoundedFavourite;
       case LinkSection.archive:
-        return Icons.archive;
+        return HugeIcons.strokeRoundedArchive;
       case LinkSection.signout:
-        return Icons.logout;
+        return HugeIcons.strokeRoundedLogout01;
     }
   }
 }
 
 class HomeScreen extends StatefulWidget {
+  const HomeScreen({super.key});
+
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
@@ -66,6 +69,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _signOut() async {
     await _authService.signOut();
+  }
+
+  String _getSecondLevelDomain(String url) {
+    final Uri uri = Uri.parse(url);
+    return uri.host.split('.').sublist(1).join('.');
   }
 
   Future<void> _showMetadataDialog(BuildContext context, LinkItem link) async {
@@ -394,6 +402,17 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  Future<void> _shareLinkAndMetadata(
+      BuildContext context, LinkItem link) async {
+    final metadata = await MetadataFetch.extract(link.url);
+    if (metadata != null) {
+      await Share.share(
+        "${metadata.title}\n\n\n${metadata.description}\n\n\n${link.url}\n\nPS: Thanks vyajan(vyajan.animaregem.me)!",
+        subject: metadata.title,
+      );
+    }
+  }
+
   Future<bool> _confirmDelete(BuildContext context) async {
     bool? shouldDelete = await showDialog<bool>(
       context: context,
@@ -430,12 +449,10 @@ class _HomeScreenState extends State<HomeScreen> {
         userId: _authService.currentUser!.uid,
       );
 
-      if (linkId != null) {
-        // get metadata for the link
-        final metadata = await MetadataFetch.extract(text);
-        if (metadata != null) {
-          await _dbService.updateMetadata(linkId, metadata);
-        }
+      // get metadata for the link
+      final metadata = await MetadataFetch.extract(text);
+      if (metadata != null) {
+        await _dbService.updateMetadata(linkId, metadata);
       }
 
       _linkController.clear();
@@ -451,6 +468,18 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       );
     }
+  }
+
+  Future<void> _showAddLinkDialog(BuildContext context) async {
+    await showDialog<void>(
+      context: context,
+      builder: (context) => AddLinkDialog(
+        linkController: _linkController,
+        onAddLink: (text) async {
+          await _addLink(text);
+        },
+      ),
+    );
   }
 
   @override
@@ -511,64 +540,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
                 return Column(
                   children: [
-                    Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: TextField(
-                              controller: _linkController,
-                              decoration: InputDecoration(
-                                hintText: 'Enter URL or text',
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 12,
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Switch(
-                                value: _isImportant,
-                                onChanged: (value) {
-                                  setState(() {
-                                    _isImportant = value;
-                                  });
-                                },
-                              ),
-                            ],
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.add),
-                            onPressed: () async {
-                              final url = _linkController.text.trim();
-                              if (url.isNotEmpty) {
-                                try {
-                                  await _addLink(url);
-                                } catch (e) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text('Failed to add link'),
-                                      backgroundColor: Colors.red,
-                                    ),
-                                  );
-                                }
-                              }
-                            },
-                            style: IconButton.styleFrom(
-                              backgroundColor: Theme.of(context).primaryColor,
-                              foregroundColor: Colors.white,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
                     Expanded(
                         child: displayedLinks.isEmpty
                             ? Center(
@@ -595,10 +566,6 @@ class _HomeScreenState extends State<HomeScreen> {
                                 itemCount: displayedLinks.length,
                                 itemBuilder: (context, index) {
                                   final link = displayedLinks[index];
-                                  final bool isYouTube = isYouTubeUrl(link.url);
-                                  final bool isValidLink = isValidUrl(link.url);
-                                  final bool isInstagram =
-                                      isInstagramUrl(link.url);
                                   return Dismissible(
                                     key: Key(link.id),
                                     background: Container(
@@ -608,7 +575,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                           horizontal: 20),
                                       child: const Row(
                                         children: [
-                                          Icon(Icons.archive,
+                                          Icon(HugeIcons.strokeRoundedArchive,
                                               color: Colors.white),
                                           SizedBox(width: 8),
                                           Text(
@@ -636,7 +603,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                                 fontWeight: FontWeight.bold),
                                           ),
                                           SizedBox(width: 8),
-                                          Icon(Icons.delete,
+                                          Icon(HugeIcons.strokeRoundedDelete01,
                                               color: Colors.white),
                                         ],
                                       ),
@@ -750,228 +717,134 @@ class _HomeScreenState extends State<HomeScreen> {
                                       margin: const EdgeInsets.symmetric(
                                           horizontal: 8, vertical: 4),
                                       child: InkWell(
-                                        onTap: isValidLink
-                                            ? () => isYouTube
-                                                ? _launchURL(link.url)
-                                                : _showMetadataDialog(
-                                                    context, link)
-                                            : null,
-                                        child: Column(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            if (isYouTube)
-                                              CachedYouTubeThumbnail(
-                                                  url: link.url)
-                                            else if (isInstagram)
-                                              CachedInstagramThumbnail(
-                                                  url: link.url)
-                                            else if (isTwitterUrl(link.url))
-                                              FutureBuilder<TwitterData?>(
-                                                future:
-                                                    getTwitterData(link.url),
-                                                builder: (context, snapshot) {
-                                                  if (snapshot
-                                                          .connectionState ==
-                                                      ConnectionState.waiting) {
-                                                    return const Padding(
-                                                      padding:
-                                                          EdgeInsets.symmetric(
-                                                              horizontal: 16,
-                                                              vertical: 8),
-                                                      child: Center(
-                                                        child: SizedBox(
-                                                          height: 24,
-                                                          width: 24,
-                                                          child:
-                                                              CircularProgressIndicator(
-                                                                  strokeWidth:
-                                                                      2),
-                                                        ),
-                                                      ),
-                                                    );
-                                                  }
-
-                                                  if (snapshot.hasData &&
-                                                      snapshot.data?.text !=
-                                                          null) {
-                                                    return Container(
-                                                      width: double.infinity,
-                                                      padding: const EdgeInsets
-                                                          .fromLTRB(
-                                                          16, 12, 16, 8),
-                                                      child: Column(
-                                                        crossAxisAlignment:
-                                                            CrossAxisAlignment
-                                                                .start,
-                                                        children: [
-                                                          if (snapshot.data
-                                                                  ?.authorName !=
-                                                              null)
-                                                            Text(
-                                                              '🐦 ${snapshot.data!.authorName!}',
-                                                              style:
-                                                                  const TextStyle(
+                                          onTap: () => _launchURL(link.url),
+                                          onLongPress: () =>
+                                              _showMetadataDialog(
+                                                  context, link),
+                                          child: Column(
+                                            children: [
+                                              ListTile(
+                                                leading:
+                                                    link.metadataImage != null
+                                                        ? Image.network(
+                                                            link.metadataImage!,
+                                                            height: 64,
+                                                            width: 64,
+                                                            fit: BoxFit.cover,
+                                                          )
+                                                        : const Icon(
+                                                            Icons.link,
+                                                            size: 64,
+                                                            color: Colors.grey,
+                                                          ),
+                                                title: Text(
+                                                  link.title,
+                                                  maxLines: 3,
+                                                ),
+                                                subtitle:
+                                                    link.metadataDescription !=
+                                                            null
+                                                        ? Text(
+                                                            link.metadataDescription!,
+                                                            maxLines: 2,
+                                                          )
+                                                        : const Text(''),
+                                              ),
+                                              Padding(
+                                                padding:
+                                                    const EdgeInsets.all(8.0),
+                                                child: Row(
+                                                    mainAxisAlignment:
+                                                        MainAxisAlignment
+                                                            .spaceBetween,
+                                                    children: [
+                                                      Container(
+                                                          decoration:
+                                                              BoxDecoration(
+                                                            color: Colors
+                                                                .deepPurple,
+                                                            borderRadius:
+                                                                BorderRadius
+                                                                    .circular(
+                                                                        24),
+                                                          ),
+                                                          padding:
+                                                              const EdgeInsets
+                                                                  .symmetric(
+                                                                  horizontal:
+                                                                      12,
+                                                                  vertical: 2),
+                                                          child: Text(
+                                                            _getSecondLevelDomain(
+                                                                link.url),
+                                                            style: TextStyle(
                                                                 fontWeight:
                                                                     FontWeight
-                                                                        .bold,
-                                                                fontSize: 13,
-                                                                color:
-                                                                    Colors.grey,
-                                                              ),
-                                                            ),
-                                                          if (snapshot.data
-                                                                  ?.authorName !=
-                                                              null)
-                                                            const SizedBox(
-                                                                height: 4),
-                                                          Text(
-                                                            snapshot
-                                                                .data!.text!,
-                                                            maxLines: 3,
-                                                            overflow:
-                                                                TextOverflow
-                                                                    .ellipsis,
-                                                            style:
-                                                                const TextStyle(
-                                                              fontSize: 13,
-                                                              height: 1.3,
-                                                            ),
-                                                          ),
-                                                        ],
-                                                      ),
-                                                    );
-                                                  }
-                                                  return const SizedBox
-                                                      .shrink();
-                                                },
-                                              ),
-                                            Padding(
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                      horizontal: 0,
-                                                      vertical: 4),
-                                              child: ListTile(
-                                                title: Text(
-                                                  maxLines: 4,
-                                                  link.title.isEmpty
-                                                      ? link.url
-                                                      : link.title,
-                                                  style: TextStyle(
-                                                    fontSize: 12,
-                                                    fontWeight: link.isPermanent
-                                                        ? FontWeight.bold
-                                                        : FontWeight.normal,
-                                                  ),
-                                                ),
-                                                subtitle: (!isYouTube &&
-                                                        !isInstagram &&
-                                                        !isTwitterUrl(link.url))
-                                                    ? Text(
-                                                        maxLines: 3,
-                                                        link.url,
-                                                        style: TextStyle(
-                                                          color: isValidLink
-                                                              ? Colors.blue
-                                                              : Colors.grey,
-                                                          fontSize: 12,
-                                                        ),
-                                                      )
-                                                    : null,
-                                                leading: CircleAvatar(
-                                                  backgroundColor:
-                                                      link.isPermanent
-                                                          ? Colors.amber
-                                                          : Colors.grey,
-                                                  child: Icon(
-                                                    (isYouTube)
-                                                        ? HugeIcons
-                                                            .strokeRoundedYoutube
-                                                        : isInstagram
-                                                            ? HugeIcons
-                                                                .strokeRoundedInstagram
-                                                            : isTwitterUrl(
-                                                                    link.url)
-                                                                ? HugeIcons
-                                                                    .strokeRoundedTwitter
-                                                                : link.url.contains(
-                                                                        'linkedin.com')
-                                                                    ? HugeIcons
-                                                                        .strokeRoundedLinkedin01
-                                                                    : isValidLink
-                                                                        ? HugeIcons
-                                                                            .strokeRoundedLink01
-                                                                        : Icons
-                                                                            .text_snippet,
-                                                    color: Colors.white,
-                                                  ),
-                                                ),
-                                                trailing: Row(
-                                                  mainAxisSize:
-                                                      MainAxisSize.min,
-                                                  children: [
-                                                    // if (!isYouTube &&
-                                                    //     !isInstagram &&
-                                                    //     !isTwitterUrl(
-                                                    //         link.url) &&
-                                                    //     isValidLink)
-                                                    //   IconButton(
-                                                    //     icon: const Icon(
-                                                    //         Icons.open_in_new),
-                                                    //     onPressed: () =>
-                                                    //         _launchURL(
-                                                    //             link.url),
-                                                    //     tooltip: 'Open Link',
-                                                    //   ),
-                                                    if (!isValidLink)
+                                                                        .bold),
+                                                          )),
                                                       IconButton(
-                                                        icon: const Icon(
-                                                            Icons.copy),
                                                         onPressed: () {
-                                                          Clipboard.setData(
-                                                              ClipboardData(
-                                                                  text: link
-                                                                      .url));
-                                                          ScaffoldMessenger.of(
-                                                                  context)
-                                                              .showSnackBar(
-                                                            const SnackBar(
-                                                              content: Text(
-                                                                  'Copied to clipboard'),
-                                                              duration:
-                                                                  Duration(
-                                                                      seconds:
-                                                                          2),
-                                                            ),
-                                                          );
-                                                        },
-                                                        tooltip: 'Copy Text',
-                                                      ),
-                                                    IconButton(
-                                                      icon: Icon(
-                                                        link.isPermanent
-                                                            ? Icons.star
-                                                            : Icons.star_border,
-                                                        color: link.isPermanent
-                                                            ? Colors.amber
-                                                            : null,
-                                                      ),
-                                                      onPressed: () =>
                                                           _dbService
                                                               .togglePermanent(
-                                                        link.id,
-                                                        !link.isPermanent,
+                                                            link.id,
+                                                            !link.isPermanent,
+                                                          );
+                                                        },
+                                                        icon: Icon(
+                                                          HugeIcons
+                                                              .strokeRoundedFavourite,
+                                                          color: link
+                                                                  .isPermanent
+                                                              ? Colors.yellow
+                                                              : Theme.of(
+                                                                      context)
+                                                                  .colorScheme
+                                                                  .secondary,
+                                                        ),
                                                       ),
-                                                      tooltip: link.isPermanent
-                                                          ? 'Remove from Important'
-                                                          : 'Mark as Important',
-                                                    ),
-                                                  ],
-                                                ),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
+                                                      IconButton(
+                                                          onPressed: () {
+                                                            Clipboard.setData(
+                                                                ClipboardData(
+                                                                    text: link
+                                                                        .url));
+                                                            ScaffoldMessenger
+                                                                    .of(context)
+                                                                .showSnackBar(
+                                                              const SnackBar(
+                                                                content: Text(
+                                                                    'Link copied to clipboard'),
+                                                                backgroundColor:
+                                                                    Colors
+                                                                        .green,
+                                                              ),
+                                                            );
+                                                          },
+                                                          icon: Icon(
+                                                            HugeIcons
+                                                                .strokeRoundedCopy01,
+                                                          )),
+                                                      IconButton(
+                                                          onPressed: () {
+                                                            _showMetadataDialog(
+                                                                context, link);
+                                                          },
+                                                          icon: Icon(HugeIcons
+                                                              .strokeRoundedFolderOpen)),
+                                                      IconButton(
+                                                          onPressed: () {
+                                                            // Share link and metadata
+                                                            _shareLinkAndMetadata(
+                                                                context, link);
+                                                          },
+                                                          icon: Icon(
+                                                            HugeIcons
+                                                                .strokeRoundedShare01,
+                                                          ))
+                                                    ]),
+                                              )
+                                            ],
+                                          )),
                                     ),
                                   );
                                 },
@@ -996,7 +869,8 @@ class _HomeScreenState extends State<HomeScreen> {
             final bool? confirm = await showDialog<bool>(
               context: context,
               builder: (context) => AlertDialog(
-                title: const Text('Sign Out'),
+                title: const Text('Sign Out',
+                    style: TextStyle(color: Colors.white)),
                 content: const Text('Are you sure you want to sign out?'),
                 actions: [
                   TextButton(
@@ -1031,6 +905,13 @@ class _HomeScreenState extends State<HomeScreen> {
             label: section.title,
           );
         }).toList(),
+      ),
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: Colors.deepPurple,
+        onPressed: () {
+          _showAddLinkDialog(context);
+        },
+        child: const Icon(HugeIcons.strokeRoundedAdd01),
       ),
     );
   }

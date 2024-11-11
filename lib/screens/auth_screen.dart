@@ -4,6 +4,8 @@ import 'package:hugeicons/hugeicons.dart';
 import '../services/auth_service.dart';
 
 class AuthScreen extends StatefulWidget {
+  const AuthScreen({super.key});
+
   @override
   _AuthScreenState createState() => _AuthScreenState();
 }
@@ -39,7 +41,7 @@ class _AuthScreenState extends State<AuthScreen> {
     return Scaffold(
       body: Center(
         child: SingleChildScrollView(
-          padding: EdgeInsets.all(16.0),
+          padding: const EdgeInsets.all(16.0),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -54,34 +56,34 @@ class _AuthScreenState extends State<AuthScreen> {
                     ),
                 textAlign: TextAlign.center,
               ),
-              SizedBox(height: 32),
+              const SizedBox(height: 32),
 
               // Error Message
               if (_errorMessage.isNotEmpty)
                 Padding(
-                  padding: EdgeInsets.only(bottom: 16),
+                  padding: const EdgeInsets.only(bottom: 16),
                   child: Text(
                     _errorMessage,
-                    style: TextStyle(color: Colors.red),
+                    style: const TextStyle(color: Colors.red),
                     textAlign: TextAlign.center,
                   ),
                 ),
 
               // Google Sign In Button
               OutlinedButton.icon(
-                icon: Icon(HugeIcons.strokeRoundedGoogle),
+                icon: const Icon(HugeIcons.strokeRoundedGoogle),
                 label: _isLoading
-                    ? SizedBox(
+                    ? const SizedBox(
                         height: 20,
                         width: 20,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
                         ),
                       )
-                    : Text('Continue with Google'),
+                    : const Text('Continue with Google'),
                 onPressed: _isLoading ? null : _signInWithGoogle,
                 style: OutlinedButton.styleFrom(
-                  padding: EdgeInsets.symmetric(vertical: 16),
+                  padding: const EdgeInsets.symmetric(vertical: 16),
                 ),
               ),
             ],

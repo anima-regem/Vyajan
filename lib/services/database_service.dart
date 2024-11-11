@@ -1,5 +1,3 @@
-// lib/services/database_service.dart
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:metadata_fetch/metadata_fetch.dart';
 import '../models/link_item.dart';
@@ -47,7 +45,7 @@ class DatabaseService {
   }
 
   Stream<List<LinkItem>> getInboxLinks(String userId) {
-    return Stream.value([]); // Empty stream for now
+    return Stream.value([]);
   }
 
   Future<void> toggleArchived(String linkId, bool isArchived) async {
@@ -88,7 +86,6 @@ class DatabaseService {
   // Update link metadata
   Future<void> updateMetadata(String linkId, Metadata metadata) async {
     await _db.collection(_linksCollection).doc(linkId).update({
-      'title': metadata.title,
       'metadataTitle': metadata.title,
       'metadataDescription': metadata.description,
       'metadataImage': metadata.image,
@@ -108,7 +105,6 @@ class DatabaseService {
         await updateMetadata(linkId, metadata);
       }
     } catch (e) {
-      print('Error refreshing metadata: $e');
       rethrow;
     }
   }

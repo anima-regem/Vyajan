@@ -5,7 +5,7 @@ class LinkItem {
   final String url;
   final String title;
   final bool isPermanent;
-  final bool isArchived; // Add this field
+  final bool isArchived;
   final DateTime createdAt;
   final String userId;
   final String? metadataTitle;
@@ -18,7 +18,7 @@ class LinkItem {
     required this.url,
     required this.title,
     required this.isPermanent,
-    this.isArchived = false, // Default to false
+    this.isArchived = false,
     required this.createdAt,
     required this.userId,
     this.metadataTitle,
@@ -34,7 +34,7 @@ class LinkItem {
       url: map['url'] ?? '',
       title: map['title'] ?? '',
       isPermanent: map['isPermanent'] ?? false,
-      isArchived: map['isArchived'] ?? false, // Add this
+      isArchived: map['isArchived'] ?? false,
       createdAt: (map['createdAt'] as Timestamp).toDate(),
       userId: map['userId'] ?? '',
       metadataTitle: map['metadataTitle'],
@@ -50,7 +50,7 @@ class LinkItem {
       'url': url,
       'title': title,
       'isPermanent': isPermanent,
-      'isArchived': isArchived, // Add this
+      'isArchived': isArchived,
       'createdAt': Timestamp.fromDate(createdAt),
       'userId': userId,
       'metadataTitle': metadataTitle,
@@ -66,7 +66,7 @@ class LinkItem {
     String? url,
     String? title,
     bool? isPermanent,
-    bool? isArchived, // Add this
+    bool? isArchived,
     DateTime? createdAt,
     String? userId,
     String? metadataTitle,
@@ -79,7 +79,7 @@ class LinkItem {
       url: url ?? this.url,
       title: title ?? this.title,
       isPermanent: isPermanent ?? this.isPermanent,
-      isArchived: isArchived ?? this.isArchived, // Add this
+      isArchived: isArchived ?? this.isArchived,
       createdAt: createdAt ?? this.createdAt,
       userId: userId ?? this.userId,
       metadataTitle: metadataTitle ?? this.metadataTitle,

@@ -48,6 +48,8 @@ dependencies:
   http: ^1.2.2
   cached_network_image: ^3.4.1
   hugeicons: ^0.0.7
+  share_plus: ^10.1.2
+  google_fonts: ^6.2.1
 
 
 dev_dependencies:

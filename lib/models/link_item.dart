@@ -89,3 +89,41 @@ class LinkItem {
     );
   }
 }
+
+class MetaDataObject {
+  final String? title;
+  final String? description;
+  final String? image;
+  final String? siteName;
+
+  MetaDataObject({
+    this.title,
+    this.description,
+    this.image,
+    this.siteName,
+  });
+
+  Map<String, dynamic> toMap() {
+    return {
+      'title': title,
+      'description': description,
+      'image': image,
+      'siteName': siteName,
+    };
+  }
+
+  factory MetaDataObject.fromMap(Map<String, dynamic> map) {
+    return MetaDataObject(
+      title: map['title'],
+      description: map['description'],
+      image: map['image'],
+      siteName: map['siteName'],
+    );
+  }
+
+  // to string
+  @override
+  String toString() {
+    return 'MetaDataObject{title: $title, description: $description, image: $image, siteName: $siteName}';
+  }
+}

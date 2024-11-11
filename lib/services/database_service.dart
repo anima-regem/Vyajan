@@ -84,8 +84,9 @@ class DatabaseService {
   }
 
   // Update link metadata
-  Future<void> updateMetadata(String linkId, Metadata metadata) async {
+  Future<void> updateMetadata(String linkId, MetaDataObject metadata) async {
     await _db.collection(_linksCollection).doc(linkId).update({
+      'title': metadata.title,
       'metadataTitle': metadata.title,
       'metadataDescription': metadata.description,
       'metadataImage': metadata.image,
@@ -101,8 +102,14 @@ class DatabaseService {
   Future<void> refreshMetadata(String linkId, String url) async {
     try {
       final metadata = await MetadataFetch.extract(url);
+
       if (metadata != null) {
-        await updateMetadata(linkId, metadata);
+        final metadataobj = MetaDataObject(
+          title: metadata.title,
+          description: metadata.description,
+          image: metadata.image,
+        );
+        await updateMetadata(linkId, metadataobj);
       }
     } catch (e) {
       rethrow;

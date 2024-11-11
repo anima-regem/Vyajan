@@ -6,10 +6,12 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:metadata_fetch/metadata_fetch.dart';
 import 'package:vyajan/components/add_link.dart';
 import 'package:vyajan/services/helpers.dart';
+import 'package:vyajan/services/scraper.dart';
 import '../services/auth_service.dart';
 import '../services/database_service.dart';
 import '../models/link_item.dart';
 import 'package:flutter/services.dart';
+import 'package:http/http.dart' as http;
 
 enum LinkSection {
   all,
@@ -439,32 +441,75 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _addLink(String text) async {
-    // Check if the text is a valid URL
     if (isValidUrl(text)) {
-      final linkId = await _dbService.addLink(
-        title: "New Link",
-        url: text,
-        isPermanent: _isImportant,
-        isArchived: false,
-        userId: _authService.currentUser!.uid,
-      );
+      try {
+        final linkId = await _dbService.addLink(
+          title: "New Link",
+          url: text,
+          isPermanent: _isImportant,
+          isArchived: false,
+          userId: _authService.currentUser!.uid,
+        );
 
-      // get metadata for the link
-      final metadata = await MetadataFetch.extract(text);
-      if (metadata != null) {
-        await _dbService.updateMetadata(linkId, metadata);
+        var metadata = await MetadataFetch.extract(text);
+        var metadataobj = MetaDataObject(
+          title: null,
+          description: null,
+          image: null,
+        );
+
+        if (isTwitterUrl(text)) {
+          final twitterData = await getTwitterData(text);
+          metadataobj = MetaDataObject(
+            title: twitterData?.authorName,
+            description: twitterData?.text,
+            image: null,
+          );
+        } else if (metadata == null ||
+            (metadata.url == null && metadata.description == null)) {
+          final scrapedData = await WebScraper.scrapeMetadata(text);
+          metadataobj = MetaDataObject(
+            title: scrapedData['title'],
+            description: scrapedData['description'],
+            image: scrapedData['image'],
+          );
+          print(scrapedData);
+        }
+
+        print(metadataobj);
+
+        if (metadata != null) {
+          await _dbService.updateMetadata(linkId, metadataobj);
+        }
+
+        _linkController.clear();
+        FocusScope.of(context).unfocus();
+        setState(() {
+          _isImportant = false;
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Link added'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      } catch (e) {
+        print('Error adding link: $e');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error adding link: ${e.toString()}'),
+            duration: const Duration(seconds: 3),
+            backgroundColor: Colors.red,
+          ),
+        );
       }
-
-      _linkController.clear();
-      FocusScope.of(context).unfocus();
-      setState(() {
-        _isImportant = false;
-      });
-
+    } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Link added'),
+          content: Text('Please enter a valid URL'),
           duration: Duration(seconds: 2),
+          backgroundColor: Colors.red,
         ),
       );
     }
@@ -777,7 +822,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                                           child: Text(
                                                             _getSecondLevelDomain(
                                                                 link.url),
-                                                            style: TextStyle(
+                                                            style: const TextStyle(
                                                                 fontWeight:
                                                                     FontWeight
                                                                         .bold),
@@ -820,7 +865,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                                               ),
                                                             );
                                                           },
-                                                          icon: Icon(
+                                                          icon: const Icon(
                                                             HugeIcons
                                                                 .strokeRoundedCopy01,
                                                           )),
@@ -829,7 +874,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                                             _showMetadataDialog(
                                                                 context, link);
                                                           },
-                                                          icon: Icon(HugeIcons
+                                                          icon: const Icon(HugeIcons
                                                               .strokeRoundedFolderOpen)),
                                                       IconButton(
                                                           onPressed: () {
@@ -837,7 +882,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                                             _shareLinkAndMetadata(
                                                                 context, link);
                                                           },
-                                                          icon: Icon(
+                                                          icon: const Icon(
                                                             HugeIcons
                                                                 .strokeRoundedShare01,
                                                           ))

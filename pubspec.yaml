@@ -50,6 +50,7 @@ dependencies:
   hugeicons: ^0.0.7
   share_plus: ^10.1.2
   google_fonts: ^6.2.1
+  html: ^0.15.5
 
 
 dev_dependencies:

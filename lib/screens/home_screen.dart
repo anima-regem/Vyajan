@@ -75,7 +75,15 @@ class _HomeScreenState extends State<HomeScreen> {
 
   String _getSecondLevelDomain(String url) {
     final Uri uri = Uri.parse(url);
-    return uri.host.split('.').sublist(1).join('.');
+    // Get the second level domain
+    // only the second level domain
+    var secondLevelDomain = uri.host.split('.');
+    var sLD = secondLevelDomain[secondLevelDomain.length - 2];
+    sLD = sLD + '.' + secondLevelDomain[secondLevelDomain.length - 1];
+
+    print('secondLevelDomainName: $sLD');
+
+    return sLD;
   }
 
   Future<void> _showMetadataDialog(BuildContext context, LinkItem link) async {
@@ -804,6 +812,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                                             .spaceBetween,
                                                     children: [
                                                       Container(
+                                                          width: 100,
+                                                          alignment:
+                                                              Alignment.center,
                                                           decoration:
                                                               BoxDecoration(
                                                             color: Colors
@@ -825,7 +836,11 @@ class _HomeScreenState extends State<HomeScreen> {
                                                             style: const TextStyle(
                                                                 fontWeight:
                                                                     FontWeight
-                                                                        .bold),
+                                                                        .bold,
+                                                                fontSize: 12),
+                                                            overflow:
+                                                                TextOverflow
+                                                                    .ellipsis,
                                                           )),
                                                       IconButton(
                                                         onPressed: () {

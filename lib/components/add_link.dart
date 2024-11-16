@@ -8,10 +8,10 @@ class AddLinkDialog extends StatefulWidget {
   final Function(String) onAddLink;
 
   const AddLinkDialog({
-    Key? key,
+    super.key,
     required this.linkController,
     required this.onAddLink,
-  }) : super(key: key);
+  });
 
   @override
   State<AddLinkDialog> createState() => _AddLinkDialogState();

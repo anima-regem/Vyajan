@@ -50,7 +50,7 @@ class WebScraper {
       final element = document.querySelector(selector);
       if (element != null) {
         if (selector == 'title') {
-          return element.text?.trim();
+          return element.text.trim();
         } else {
           return element.attributes['content']?.trim();
         }

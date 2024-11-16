@@ -252,7 +252,7 @@ class MyApp extends StatelessWidget {
           }
 
           // If user is logged in, show HomeScreen, otherwise show AuthScreen
-          return snapshot.hasData ? HomeScreen() : AuthScreen();
+          return snapshot.hasData ? const HomeScreen() : const AuthScreen();
         },
       ),
     );

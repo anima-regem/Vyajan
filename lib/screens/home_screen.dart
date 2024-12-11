@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:hugeicons/hugeicons.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -103,7 +102,7 @@ class _HomeScreenState extends State<HomeScreen> {
           const SizedBox(height: 8),
           const Text('Could not fetch metadata for this link'),
           const SizedBox(height: 16),
-          ButtonBar(
+          OverflowBar(
             children: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
@@ -123,7 +122,8 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Future<void> _shareLinkAndMetadata(BuildContext context, LinkItem link) async {
+  Future<void> _shareLinkAndMetadata(
+      BuildContext context, LinkItem link) async {
     final metadata = await MetadataFetch.extract(link.url);
     if (metadata != null) {
       await Share.share(
@@ -228,7 +228,8 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildMetadataDetails(BuildContext context, Metadata metadata, LinkItem link) {
+  Widget _buildMetadataDetails(
+      BuildContext context, Metadata metadata, LinkItem link) {
     final title = metadata.title ?? 'No Title';
     final bool showTitleInHeader = title.length <= 50;
 
@@ -241,7 +242,8 @@ class _HomeScreenState extends State<HomeScreen> {
             const Divider(height: 1),
           ],
           Expanded(
-            child: _buildScrollableContent(context, metadata, link, showTitleInHeader, title),
+            child: _buildScrollableContent(
+                context, metadata, link, showTitleInHeader, title),
           ),
           _buildActionBar(context, link),
         ],
@@ -259,7 +261,8 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildScrollableContent(BuildContext context, Metadata metadata, LinkItem link, bool showTitleInHeader, String title) {
+  Widget _buildScrollableContent(BuildContext context, Metadata metadata,
+      LinkItem link, bool showTitleInHeader, String title) {
     return Scrollbar(
       thumbVisibility: true,
       child: SingleChildScrollView(
@@ -270,12 +273,14 @@ class _HomeScreenState extends State<HomeScreen> {
             if (!showTitleInHeader) ...[
               SelectableText(
                 title,
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, height: 1.4),
+                style: const TextStyle(
+                    fontSize: 18, fontWeight: FontWeight.bold, height: 1.4),
               ),
               const SizedBox(height: 16),
             ],
             if (metadata.image != null) _buildImage(context, metadata.image!),
-            if (metadata.description != null) _buildDescription(metadata.description!),
+            if (metadata.description != null)
+              _buildDescription(metadata.description!),
             _buildUrlSection(link.url),
           ],
         ),
@@ -288,14 +293,16 @@ class _HomeScreenState extends State<HomeScreen> {
       children: [
         Container(
           width: double.infinity,
-          constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width),
+          constraints:
+              BoxConstraints(maxWidth: MediaQuery.of(context).size.width),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(8),
             child: Image.network(
               imageUrl,
               fit: BoxFit.contain,
               alignment: Alignment.center,
-              errorBuilder: (_, __, ___) => const Icon(Icons.broken_image, size: 100),
+              errorBuilder: (_, __, ___) =>
+                  const Icon(Icons.broken_image, size: 100),
               loadingBuilder: (_, child, loadingProgress) {
                 if (loadingProgress == null) return child;
                 return Container(
@@ -303,7 +310,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   alignment: Alignment.center,
                   child: CircularProgressIndicator(
                     value: loadingProgress.expectedTotalBytes != null
-                        ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                        ? loadingProgress.cumulativeBytesLoaded /
+                            loadingProgress.expectedTotalBytes!
                         : null,
                   ),
                 );
@@ -357,7 +365,7 @@ class _HomeScreenState extends State<HomeScreen> {
         const Divider(height: 1),
         Padding(
           padding: const EdgeInsets.all(8),
-          child: ButtonBar(
+          child: OverflowBar(
             children: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
@@ -377,7 +385,8 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildTwitterView(BuildContext context, TwitterData tweetData, LinkItem link) {
+  Widget _buildTwitterView(
+      BuildContext context, TwitterData tweetData, LinkItem link) {
     return Material(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -400,7 +409,8 @@ class _HomeScreenState extends State<HomeScreen> {
       padding: const EdgeInsets.all(16),
       child: Row(
         children: [
-          const Icon(HugeIcons.strokeRoundedTwitter, color: Colors.grey, size: 20),
+          const Icon(HugeIcons.strokeRoundedTwitter,
+              color: Colors.grey, size: 20),
           const SizedBox(width: 8),
           Text(
             authorName,
@@ -411,7 +421,8 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildTwitterContent(BuildContext context, TwitterData tweetData, LinkItem link) {
+  Widget _buildTwitterContent(
+      BuildContext context, TwitterData tweetData, LinkItem link) {
     return Scrollbar(
       thumbVisibility: true,
       child: SingleChildScrollView(
@@ -439,7 +450,7 @@ class _HomeScreenState extends State<HomeScreen> {
         const Divider(height: 1),
         Padding(
           padding: const EdgeInsets.all(8),
-          child: ButtonBar(
+          child: OverflowBar(
             children: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
@@ -627,7 +638,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     : HugeIcons.strokeRoundedFavourite,
                 color: link.isPermanent ? Colors.red : null,
               ),
-              onPressed: () => _dbService.togglePermanent(link.id, !link.isPermanent),
+              onPressed: () =>
+                  _dbService.togglePermanent(link.id, !link.isPermanent),
             ),
             IconButton(
               icon: const Icon(HugeIcons.strokeRoundedShare01),

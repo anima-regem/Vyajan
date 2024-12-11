@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:hugeicons/hugeicons.dart';
 import 'package:share_plus/share_plus.dart';
@@ -492,9 +493,6 @@ class _HomeScreenState extends State<HomeScreen> {
         child: ListView(
           children: [
             const DrawerHeader(
-              decoration: BoxDecoration(
-                color: Color(0xFF6750A4),
-              ),
               child: Text(
                 'Vyajan',
                 style: TextStyle(
@@ -595,10 +593,12 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
       onDismissed: (_) => _dbService.deleteLink(link.id),
-      child: ListTile(
+      child: 
+        ListTile(
+        // contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         leading: Container(
-          width: 64,
-          height: 64,
+          width: 72,
+          height: 72,
           decoration: BoxDecoration(
             color: Colors.grey[200],
             borderRadius: BorderRadius.circular(8),
@@ -622,28 +622,39 @@ class _HomeScreenState extends State<HomeScreen> {
           link.metadataTitle ?? link.title,
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
+          style: const TextStyle(fontSize: 12),
         ),
         subtitle: Text(
           link.metadataDescription ?? link.url,
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
+          style: const TextStyle(fontSize: 10),
         ),
         trailing: Row(
+          mainAxisAlignment: MainAxisAlignment.end,
           mainAxisSize: MainAxisSize.min,
           children: [
-            IconButton(
-              icon: Icon(
-                link.isPermanent
-                    ? HugeIcons.strokeRoundedFavourite
-                    : HugeIcons.strokeRoundedFavourite,
-                color: link.isPermanent ? Colors.red : null,
+            SizedBox(
+              width: 20,
+              child: IconButton(
+                icon: Icon(
+                  link.isPermanent
+                      ? HugeIcons.strokeRoundedFavourite
+                      : HugeIcons.strokeRoundedFavourite,
+                  color: link.isPermanent ? Colors.red : null,
+                  size: 18,
+                ),
+                onPressed: () =>
+                    _dbService.togglePermanent(link.id, !link.isPermanent),
               ),
-              onPressed: () =>
-                  _dbService.togglePermanent(link.id, !link.isPermanent),
             ),
-            IconButton(
-              icon: const Icon(HugeIcons.strokeRoundedShare01),
-              onPressed: () => _shareLinkAndMetadata(context, link),
+            const SizedBox(width: 16),
+            SizedBox(
+              width: 20,
+              child: IconButton(
+                icon: const Icon(HugeIcons.strokeRoundedShare01, size: 18,),
+                onPressed: () => _shareLinkAndMetadata(context, link),
+              ),
             ),
           ],
         ),

@@ -1,4 +1,3 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:hugeicons/hugeicons.dart';
 import 'package:share_plus/share_plus.dart';
@@ -585,7 +584,10 @@ class _HomeScreenState extends State<HomeScreen> {
               child: const Text('Cancel'),
             ),
             ElevatedButton(
-              onPressed: () => Navigator.of(context).pop(true),
+              onPressed: () {
+                Navigator.of(context).pop(true);
+                _dbService.deleteLink(link.id);
+              },
               style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
               child: const Text('Delete'),
             ),
@@ -593,8 +595,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
       onDismissed: (_) => _dbService.deleteLink(link.id),
-      child: 
-        ListTile(
+      child: ListTile(
         // contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         leading: Container(
           width: 72,
@@ -652,7 +653,10 @@ class _HomeScreenState extends State<HomeScreen> {
             SizedBox(
               width: 20,
               child: IconButton(
-                icon: const Icon(HugeIcons.strokeRoundedShare01, size: 18,),
+                icon: const Icon(
+                  HugeIcons.strokeRoundedShare01,
+                  size: 18,
+                ),
                 onPressed: () => _shareLinkAndMetadata(context, link),
               ),
             ),

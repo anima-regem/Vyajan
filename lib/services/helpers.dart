@@ -2,6 +2,25 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
+import 'package:vyajan/services/constants.dart';
+
+String getVersion() {
+  return appVersion;
+}
+
+Future<String?> getLatestVersion() async {
+  try {
+    final response = await http.get(Uri.parse('$rawGithubUrl/VERSION'));
+
+    if (response.statusCode == 200) {
+      return response.body.trim();
+    } else {
+      return null;
+    }
+  } catch (e) {
+    return null;
+  }
+}
 
 bool isYouTubeUrl(String url) {
   return url.toLowerCase().contains('youtube.com/') ||

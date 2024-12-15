@@ -13,8 +13,7 @@ import '../models/link_item.dart';
 enum LinkSection {
   all('All Links', HugeIcons.strokeRoundedLink01),
   important('Important', HugeIcons.strokeRoundedFavourite),
-  archive('Archive', HugeIcons.strokeRoundedArchive),
-  signout('Sign Out', HugeIcons.strokeRoundedLogout01);
+  archive('Archive', HugeIcons.strokeRoundedArchive);
 
   final String title;
   final IconData icon;
@@ -32,7 +31,7 @@ class _HomeScreenState extends State<HomeScreen> {
   final AuthService _authService = AuthService();
   final DatabaseService _dbService = DatabaseService();
   final TextEditingController _linkController = TextEditingController();
-  LinkSection _currentSection = LinkSection.all;
+  final LinkSection _currentSection = LinkSection.all;
   bool _isImportant = false;
 
   @override
@@ -489,7 +488,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
       drawer: Drawer(
-        child: ListView(
+        child: Column(
           children: [
             const DrawerHeader(
               child: Text(
@@ -506,15 +505,26 @@ class _HomeScreenState extends State<HomeScreen> {
                 leading: Icon(section.icon),
                 title: Text(section.title),
                 selected: _currentSection == section,
-                onTap: () {
-                  if (section == LinkSection.signout) {
-                    _signOut();
-                  } else {
-                    setState(() => _currentSection = section);
-                    Navigator.pop(context);
-                  }
-                },
               ),
+            Expanded(child: Container()),
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  IconButton(
+                      onPressed: () {
+                        Navigator.of(context).pushNamed('/settings');
+                      },
+                      icon: const Icon(HugeIcons.strokeRoundedSettings01)),
+                  IconButton(
+                      onPressed: () {
+                        _signOut();
+                      },
+                      icon: const Icon(HugeIcons.strokeRoundedLogout01))
+                ],
+              ),
+            ),
           ],
         ),
       ),
@@ -558,7 +568,6 @@ class _HomeScreenState extends State<HomeScreen> {
       case LinkSection.archive:
         return links.where((link) => link.isArchived).toList();
       case LinkSection.all:
-      case LinkSection.signout:
         return links;
     }
   }

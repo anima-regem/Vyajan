@@ -3,8 +3,8 @@
     <application
         android:label="@string/appName"
         android:name="${applicationName}"
-        android:icon="@mipmap/launcher_icon">
-        android:enableOnBackInvokedCallback="true"
+        android:icon="@mipmap/launcher_icon"
+        android:enableOnBackInvokedCallback="true">
 
 
         <meta-data

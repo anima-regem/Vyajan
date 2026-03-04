@@ -46,6 +46,23 @@ app.*.map.json
 /android/app/google-services.json
 /ios/Runner/GoogleService-Info.plist
 /lib/firebase_options.dart
+/android/local.properties
+firebase.json
+firepit-log.txt
+
+# Common secret/certificate files
+.env
+.env.*
+*.jks
+*.keystore
+*.p8
+*.p12
+*.pem
+*.mobileprovision
+*.cer
 
 # FVM Version Cache
 .fvm/
+
+# Local Gradle cache used for sandbox-friendly builds
+.gradle-local/

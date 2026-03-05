@@ -43,8 +43,8 @@ app.*.map.json
 /android/app/release
 
 # Add Firebase configuration files to the gitignore
-/android/app/google-services.json
-/ios/Runner/GoogleService-Info.plist
+/android/app/google-services*.json
+/ios/Runner/GoogleService-Info*.plist
 /lib/firebase_options.dart
 /android/local.properties
 firebase.json
@@ -66,3 +66,6 @@ firepit-log.txt
 
 # Local Gradle cache used for sandbox-friendly builds
 .gradle-local/
+
+# Local release packaging artifacts
+release_assets/

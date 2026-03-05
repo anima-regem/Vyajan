@@ -1,6 +1,6 @@
-import 'package:http/http.dart' as http;
-import 'package:html/parser.dart' show parse;
 import 'package:html/dom.dart';
+import 'package:html/parser.dart' show parse;
+import 'package:http/http.dart' as http;
 
 class WebScraper {
   static const _userAgent =
@@ -25,8 +25,7 @@ class WebScraper {
         'siteName': _extractSiteName(document, url),
         'url': url,
       };
-    } catch (e) {
-      print('Error scraping metadata: $e');
+    } catch (_) {
       return {
         'title': null,
         'description': null,
@@ -38,8 +37,7 @@ class WebScraper {
   }
 
   static String? _extractTitle(Document document) {
-    // Try multiple selectors in order of preference
-    final selectors = [
+    const selectors = [
       'meta[property="og:title"]',
       'meta[name="twitter:title"]',
       'meta[name="title"]',
@@ -48,19 +46,18 @@ class WebScraper {
 
     for (final selector in selectors) {
       final element = document.querySelector(selector);
-      if (element != null) {
-        if (selector == 'title') {
-          return element.text.trim();
-        } else {
-          return element.attributes['content']?.trim();
-        }
+      if (element == null) continue;
+      if (selector == 'title') {
+        return element.text.trim();
       }
+      return element.attributes['content']?.trim();
     }
+
     return null;
   }
 
   static String? _extractDescription(Document document) {
-    final selectors = [
+    const selectors = [
       'meta[property="og:description"]',
       'meta[name="twitter:description"]',
       'meta[name="description"]',
@@ -68,14 +65,13 @@ class WebScraper {
     ];
 
     for (final selector in selectors) {
-      final element = document.querySelector(selector);
-      final content = element?.attributes['content']?.trim();
+      final content =
+          document.querySelector(selector)?.attributes['content']?.trim();
       if (content != null && content.isNotEmpty) {
         return content;
       }
     }
 
-    // Fallback: Try to extract from first paragraph
     final firstParagraph = document.querySelector('p');
     if (firstParagraph != null) {
       final text = firstParagraph.text.trim();
@@ -89,41 +85,38 @@ class WebScraper {
   }
 
   static String? _extractImage(Document document, String baseUrl) {
-    final selectors = [
+    const selectors = [
       'meta[property="og:image"]',
       'meta[name="twitter:image"]',
       'meta[itemprop="image"]',
     ];
 
     for (final selector in selectors) {
-      final element = document.querySelector(selector);
-      final content = element?.attributes['content'];
+      final content = document.querySelector(selector)?.attributes['content'];
       if (content != null && content.isNotEmpty) {
         return _normalizeUrl(content, baseUrl);
       }
     }
 
-    // Fallback: Try to find first relevant image
     final img = document.querySelector('article img, main img, .content img');
-    final imgSrc = img?.attributes['src'];
-    return imgSrc != null ? _normalizeUrl(imgSrc, baseUrl) : null;
+    final src = img?.attributes['src'];
+    return src != null ? _normalizeUrl(src, baseUrl) : null;
   }
 
   static String? _extractSiteName(Document document, String url) {
-    final selectors = [
+    const selectors = [
       'meta[property="og:site_name"]',
       'meta[name="application-name"]',
     ];
 
     for (final selector in selectors) {
-      final element = document.querySelector(selector);
-      final content = element?.attributes['content']?.trim();
+      final content =
+          document.querySelector(selector)?.attributes['content']?.trim();
       if (content != null && content.isNotEmpty) {
         return content;
       }
     }
 
-    // Fallback: Try to extract from canonical URL or original URL
     try {
       final canonical =
           document.querySelector('link[rel="canonical"]')?.attributes['href'];
@@ -140,12 +133,12 @@ class WebScraper {
         return 'https:$url';
       }
       if (url.startsWith('/')) {
-        final baseUri = Uri.parse(baseUrl);
-        return '${baseUri.scheme}://${baseUri.host}$url';
+        final base = Uri.parse(baseUrl);
+        return '${base.scheme}://${base.host}$url';
       }
       if (!url.startsWith('http')) {
-        final baseUri = Uri.parse(baseUrl);
-        return '${baseUri.scheme}://${baseUri.host}/${url.startsWith('/') ? url.substring(1) : url}';
+        final base = Uri.parse(baseUrl);
+        return '${base.scheme}://${base.host}/${url.startsWith('/') ? url.substring(1) : url}';
       }
       return url;
     } catch (_) {

@@ -1,31 +1,36 @@
-// lib/screens/auth_screen.dart
 import 'package:flutter/material.dart';
-import 'package:hugeicons/hugeicons.dart';
-import '../services/auth_service.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class AuthScreen extends StatefulWidget {
+import '../providers/app_providers.dart';
+
+class AuthScreen extends ConsumerStatefulWidget {
   const AuthScreen({super.key});
 
   @override
-  _AuthScreenState createState() => _AuthScreenState();
+  ConsumerState<AuthScreen> createState() => _AuthScreenState();
 }
 
-class _AuthScreenState extends State<AuthScreen> {
-  final _authService = AuthService();
+class _AuthScreenState extends ConsumerState<AuthScreen> {
   bool _isLoading = false;
-  String _errorMessage = '';
+  String? _error;
 
-  Future<void> _signInWithGoogle() async {
+  Future<void> _signIn() async {
+    if (_isLoading) return;
+
     setState(() {
       _isLoading = true;
-      _errorMessage = '';
+      _error = null;
     });
 
     try {
-      await _authService.signInWithGoogle();
-    } catch (e) {
+      await ref.read(authServiceProvider).signInWithGoogle();
+      await ref
+          .read(analyticsServiceProvider)
+          .logEssentialEvent('google_sign_in');
+    } catch (error) {
       setState(() {
-        _errorMessage = e.toString();
+        _error = error.toString();
       });
     } finally {
       if (mounted) {
@@ -41,52 +46,82 @@ class _AuthScreenState extends State<AuthScreen> {
     return Scaffold(
       body: Center(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // App Name
-              Text(
-                'വ്യാജൻ',
-                style: Theme.of(context).textTheme.headlineLarge!.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: Theme.of(context).colorScheme.primary,
-                      fontSize: 58,
+          padding: const EdgeInsets.all(24),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 420),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  'Vyajan',
+                  style: Theme.of(context)
+                      .textTheme
+                      .displayMedium
+                      ?.copyWith(letterSpacing: -0.8),
+                  textAlign: TextAlign.center,
+                ).animate().fadeIn(duration: 320.ms).slideY(begin: 0.1),
+                const SizedBox(height: 8),
+                Text(
+                  'Capture fast. Curate deeply. Stay focused.',
+                  style: Theme.of(context).textTheme.bodyLarge,
+                  textAlign: TextAlign.center,
+                ).animate().fadeIn(delay: 120.ms, duration: 280.ms),
+                const SizedBox(height: 28),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).cardColor,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: Theme.of(context)
+                          .dividerColor
+                          .withValues(alpha: 0.35),
                     ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 32),
-
-              // Error Message
-              if (_errorMessage.isNotEmpty)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 16),
-                  child: Text(
-                    _errorMessage,
-                    style: const TextStyle(color: Colors.red),
-                    textAlign: TextAlign.center,
                   ),
-                ),
-
-              // Google Sign In Button
-              OutlinedButton.icon(
-                icon: const Icon(HugeIcons.strokeRoundedGoogle),
-                label: _isLoading
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                        ),
-                      )
-                    : const Text('Continue with Google'),
-                onPressed: _isLoading ? null : _signInWithGoogle,
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                ),
-              ),
-            ],
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Text(
+                        'Sign in to continue',
+                        style: Theme.of(context).textTheme.titleLarge,
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        'Google authentication keeps setup minimal and secure.',
+                        style: Theme.of(context).textTheme.bodyMedium,
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 16),
+                      FilledButton.icon(
+                        onPressed: _isLoading ? null : _signIn,
+                        icon: _isLoading
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child:
+                                    CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            : const Icon(Icons.login_rounded),
+                        label: const Text('Continue with Google'),
+                      ),
+                      if (_error != null) ...[
+                        const SizedBox(height: 10),
+                        Text(
+                          _error!,
+                          style: Theme.of(context)
+                              .textTheme
+                              .bodySmall
+                              ?.copyWith(
+                                  color: Theme.of(context).colorScheme.error),
+                          textAlign: TextAlign.center,
+                        )
+                      ],
+                    ],
+                  ),
+                ).animate().fadeIn(delay: 200.ms, duration: 280.ms),
+              ],
+            ),
           ),
         ),
       ),

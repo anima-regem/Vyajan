@@ -1,61 +1,45 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:metadata_fetch/metadata_fetch.dart';
+
 import '../models/link_item.dart';
+import '../repositories/firestore_link_repository.dart';
+import '../repositories/link_repository.dart';
 
+/// Legacy compatibility facade.
+///
+/// New code should use repositories directly from `lib/repositories/`.
+@Deprecated(
+    'Use LinkRepository + CollectionRepository + PreferencesRepository.')
 class DatabaseService {
-  final FirebaseFirestore _db = FirebaseFirestore.instance;
-  final String _linksCollection = 'links';
+  DatabaseService({
+    FirebaseFirestore? firestore,
+    LinkRepository? linkRepository,
+  })  : _firestore = firestore ?? FirebaseFirestore.instance,
+        _linkRepository = linkRepository ??
+            FirestoreLinkRepository(firestore ?? FirebaseFirestore.instance);
 
-  // Get user's links
+  final FirebaseFirestore _firestore;
+  final LinkRepository _linkRepository;
+
   Stream<List<LinkItem>> getUserLinks(String userId) {
-    return _db
-        .collection(_linksCollection)
-        .where('userId', isEqualTo: userId)
-        .where('isArchived', isEqualTo: false)
-        .orderBy('createdAt', descending: true)
-        .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => LinkItem.fromMap(doc.data(), doc.id))
-            .toList());
+    return _linkRepository.watchAll(userId);
   }
 
   Stream<List<LinkItem>> getImportantLinks(String userId) {
-    return _db
-        .collection(_linksCollection)
-        .where('userId', isEqualTo: userId)
-        .where('isPermanent', isEqualTo: true)
-        .where('isArchived', isEqualTo: false)
-        .orderBy('createdAt', descending: true)
-        .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => LinkItem.fromMap(doc.data(), doc.id))
-            .toList());
+    return _linkRepository.watchByStatus(userId, LinkStatus.curated);
   }
 
   Stream<List<LinkItem>> getArchivedLinks(String userId) {
-    return _db
-        .collection(_linksCollection)
-        .where('userId', isEqualTo: userId)
-        .where('isArchived', isEqualTo: true)
-        .orderBy('createdAt', descending: true)
-        .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => LinkItem.fromMap(doc.data(), doc.id))
-            .toList());
-  }
-
-  Stream<List<LinkItem>> getInboxLinks(String userId) {
-    return Stream.value([]);
+    return _linkRepository.watchByStatus(userId, LinkStatus.archived);
   }
 
   Future<void> toggleArchived(String linkId, bool isArchived) async {
-    await _db
-        .collection(_linksCollection)
-        .doc(linkId)
-        .update({'isArchived': isArchived});
+    await _linkRepository.updateStatus(
+      linkId,
+      isArchived ? LinkStatus.archived : LinkStatus.inbox,
+    );
   }
 
-  // Add new link
   Future<String> addLink({
     required String url,
     required String title,
@@ -63,70 +47,64 @@ class DatabaseService {
     required bool isArchived,
     required String userId,
   }) async {
-    final docRef = await _db.collection(_linksCollection).add({
-      'url': url,
-      'title': title,
-      'isPermanent': isPermanent,
-      'isArchived': false,
-      'createdAt': Timestamp.now(),
-      'userId': userId,
-    });
+    final status = isArchived
+        ? LinkStatus.archived
+        : (isPermanent ? LinkStatus.curated : LinkStatus.inbox);
 
-    return docRef.id;
+    return _linkRepository.addLink(
+      userId: userId,
+      url: url,
+      title: title,
+      createdBy: 'manual',
+      status: status,
+    );
   }
 
-  // Update link permanent status
   Future<void> togglePermanent(String linkId, bool isPermanent) async {
-    await _db
-        .collection(_linksCollection)
-        .doc(linkId)
-        .update({'isPermanent': isPermanent});
+    await _linkRepository.updateStatus(
+      linkId,
+      isPermanent ? LinkStatus.curated : LinkStatus.inbox,
+    );
   }
 
-  // Update link metadata
   Future<void> updateMetadata(String linkId, MetaDataObject metadata) async {
-    await _db.collection(_linksCollection).doc(linkId).update({
+    await _linkRepository.patchLink(linkId, {
       'title': metadata.title,
       'metadataTitle': metadata.title,
       'metadataDescription': metadata.description,
       'metadataImage': metadata.image,
+      'metadataSiteName': metadata.siteName,
+      'summary': metadata.description,
     });
   }
 
-  // Delete link
-  Future<void> deleteLink(String linkId) async {
-    await _db.collection(_linksCollection).doc(linkId).delete();
+  Future<void> deleteLink(String linkId) {
+    return _linkRepository.deleteLink(linkId);
   }
 
-  // Refresh metadata for a link
   Future<void> refreshMetadata(String linkId, String url) async {
-    try {
-      final metadata = await MetadataFetch.extract(url);
+    final metadata = await MetadataFetch.extract(url);
+    if (metadata == null) return;
 
-      if (metadata != null) {
-        final metadataobj = MetaDataObject(
-          title: metadata.title,
-          description: metadata.description,
-          image: metadata.image,
-        );
-        await updateMetadata(linkId, metadataobj);
-      }
-    } catch (e) {
-      rethrow;
-    }
+    await updateMetadata(
+      linkId,
+      MetaDataObject(
+        title: metadata.title,
+        description: metadata.description,
+        image: metadata.image,
+      ),
+    );
   }
 
-  // Get single link
   Future<LinkItem?> getLink(String linkId) async {
-    final doc = await _db.collection(_linksCollection).doc(linkId).get();
-    if (doc.exists) {
-      return LinkItem.fromMap(doc.data()!, doc.id);
+    final doc = await _firestore.collection('links').doc(linkId).get();
+    if (!doc.exists || doc.data() == null) {
+      return null;
     }
-    return null;
+    return LinkItem.fromMap(doc.data()!, doc.id);
   }
 
-  // Restore deleted link
   Future<void> restoreLink(LinkItem link) async {
-    await _db.collection(_linksCollection).doc(link.id).set(link.toMap());
+    await _firestore.collection('links').doc(link.id).set(link.toMap());
   }
 }

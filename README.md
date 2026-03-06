@@ -1,79 +1,155 @@
-# 🔗 Vyajan - Where Links Go to Party! 
+# Vyajan
 
-[![Built with Flutter](https://img.shields.io/badge/Built%20with-Flutter-blue.svg)](https://flutter.dev)
-[![Powered by Coffee](https://img.shields.io/badge/Powered%20by-Coffee%20☕-brown.svg)](https://buymeacoffee.com)
+Vyajan is where your links stop living in 47 open tabs and start behaving.
 
-## What's This All About? 🤔
+Built with Flutter, backed by Firebase, and organized around `Inbox`, `Library`, `Insights`, and `Settings`.
 
-Ever found yourself drowning in a sea of browser tabs? Bookmarks looking like a digital hoarder's paradise? Enter Vyajan - your personal link sanctuary where URLs come to chill and stay organized!
+## What It Does
 
-## Features That'll Make You Go "Wow!" 🎉
+- Google Sign-In authentication
+- Firestore-backed link storage and updates
+- Link metadata/thumbnail enrichment
+- Inbox-to-library workflow
+- Insights and analytics-oriented tracking
+- Notification scheduling support
 
-### 🌟 Smart Organization
-- **All Links**: Where every URL is a VIP
-- **Important**: For those extra special links you can't live without
-- **Archive**: Where links go for a peaceful retirement
-- **Inbox**: Your link's first stop in their organizational journey
+## Stack
 
-### 🎨 Cool Stuff We've Got
-- 🎥 Automatic YouTube thumbnail previews (because who doesn't love pictures?)
-- 📝 Automagic metadata fetching (we read the boring stuff so you don't have to)
-- 🔄 Swipe actions that make organizing feel like a game
-- 🌐 Universal link support (if it's on the internet, we can handle it!)
-- 🎯 Google Sign-In (because remembering passwords is so 2010)
+- Flutter + Dart
+- Firebase Core, Auth, Firestore, Analytics
+- Riverpod for state
+- GoRouter for navigation
 
-## Getting Started 🚀
+## Project Structure
 
-1. Clone this bad boy:
+Inside `lib/`:
+
+- `components/` reusable UI pieces
+- `models/` domain data models
+- `providers/` Riverpod providers
+- `repositories/` Firestore data access
+- `screens/` app screens
+- `services/` auth, analytics, notifications, enrichment, migrations
+- `theme/` app theming
+
+## Prerequisites
+
+- Flutter SDK compatible with `sdk: >=3.4.4 <4.0.0`
+- Android Studio + Android SDK
+- Java 21 (Android Studio JBR recommended)
+- Xcode + CocoaPods for iOS
+- A configured Firebase project
+
+## Setup
+
+1. Clone and enter the repo:
+
 ```bash
-git clone https://github.com/anima-regem/vyajan.git
+git clone https://github.com/anima-regem/Vyajan.git
+cd Vyajan
 ```
 
-2. Get those dependencies:
+2. Install packages:
+
 ```bash
 flutter pub get
 ```
 
-3. Run it like you mean it:
+3. Add local Firebase files (these are gitignored on purpose):
+
+- `android/app/google-services.json`
+- `ios/Runner/GoogleService-Info.plist`
+- `lib/firebase_options.dart`
+
+4. Register your debug key fingerprints for Android Google Sign-In:
+
+```bash
+keytool -list -v \
+  -alias androiddebugkey \
+  -keystore "$HOME/.android/debug.keystore" \
+  -storepass android \
+  -keypass android
+```
+
+Take both `SHA1` and `SHA256`, add them in Firebase Android app settings, and download a fresh `google-services.json`.
+
+## Run
+
 ```bash
 flutter run
 ```
 
-## Why "Vyajan"? 🤓
+## Build
 
-Because "Yet Another Link Manager" was too boring! Plus, we wanted something that sounds cool at parties.
+Release APKs (split per ABI):
 
-## Contributing 🤝
+```bash
+flutter build apk --release --split-per-abi
+```
 
-Got ideas? We love ideas! Here's how you can join the link-saving revolution:
+Outputs:
 
-1. Fork it (the repo, not your dinner)
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request (and cross your fingers! 🤞)
+- `build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk`
+- `build/app/outputs/flutter-apk/app-arm64-v8a-release.apk`
+- `build/app/outputs/flutter-apk/app-x86_64-release.apk`
 
-## Tech Stack 🛠️
+Release App Bundle:
 
-- Flutter (because native is overrated)
-- Firebase (for all the backend magic)
-- Coffee ☕ (lots of it)
-- Love ❤️ (even more of it)
+```bash
+flutter build appbundle --release
+```
 
-## License 📜
+Output:
 
-Distributed under the MIT License. See `LICENSE` for more information.
-(Translation: Feel free to use it, just don't blame us if your links start a rebellion)
+- `build/app/outputs/bundle/release/app-release.aab`
 
-## Acknowledgments 🙏
+## Release Workflow (GitHub)
 
-- Stack Overflow (our true MVP)
-- The Flutter team (for making mobile development fun again)
-- Caffeine (for obvious reasons)
-- You (for reading this far - you're awesome!)
+Create and push a tag:
 
----
+```bash
+git tag -a vX.Y -m "Release vX.Y"
+git push origin vX.Y
+```
 
-Made with ❤️ and probably too much caffeine. Happy linking! 🚀
+Create release:
 
-_P.S. If you find any bugs, they're definitely features we haven't documented yet._
+```bash
+gh release create vX.Y --title "vX.Y" --generate-notes
+```
+
+Upload assets:
+
+```bash
+gh release upload vX.Y path/to/artifact --clobber
+```
+
+## What Must Stay Out Of Git
+
+These are local-only or sensitive and should not be committed:
+
+- `android/app/google-services*.json`
+- `ios/Runner/GoogleService-Info*.plist`
+- `lib/firebase_options.dart`
+- `android/local.properties`
+- `.env*`
+- `*.jks`, `*.keystore`, `*.p8`, `*.p12`, `*.pem`, `*.cer`
+- `release_assets/`
+- `.gradle-local/`
+
+## Troubleshooting
+
+### Google Sign-In: `ApiException: 10`
+
+This usually means Firebase OAuth fingerprints do not match your local signing key. Re-check SHA1/SHA256 in Firebase and replace `google-services.json`.
+
+### Android build: `requires core library desugaring`
+
+`android/app/build.gradle` must include:
+
+- `coreLibraryDesugaringEnabled true` in `compileOptions`
+- `coreLibraryDesugaring "com.android.tools:desugar_jdk_libs:2.1.5"` in `dependencies`
+
+## License
+
+MIT. See `LICENSE`.

@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../components/link_details_sheet.dart';
 import '../components/thumbnail.dart';
 import '../models/collection_item.dart';
 import '../models/link_item.dart';
@@ -56,6 +57,51 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
 
     await launchUrl(uri, mode: LaunchMode.externalApplication);
     await ref.read(linkActionsServiceProvider).recordOpen(link);
+  }
+
+  Future<void> _showDetails(LinkItem link) async {
+    await HapticFeedback.selectionClick();
+    if (!mounted) return;
+    await showLinkDetailsSheet(context, link);
+  }
+
+  Future<void> _deleteLink(LinkItem link) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Delete link?'),
+          content: const Text(
+            'This removes the link permanently from your workspace.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('Delete'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed != true) return;
+
+    try {
+      await ref.read(linkActionsServiceProvider).deleteLink(link);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Link deleted.')),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.toString())),
+      );
+    }
   }
 
   Future<void> _batchArchive() async {
@@ -413,6 +459,10 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                                       await ref
                                           .read(linkActionsServiceProvider)
                                           .moveToInbox(link);
+                                    } else if (value == 'details') {
+                                      await _showDetails(link);
+                                    } else if (value == 'delete') {
+                                      await _deleteLink(link);
                                     } else if (value == 'open') {
                                       await _openLink(link);
                                     }
@@ -429,6 +479,15 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                                     PopupMenuItem(
                                       value: 'archive',
                                       child: Text('Archive'),
+                                    ),
+                                    PopupMenuItem(
+                                      value: 'details',
+                                      child: Text('View details'),
+                                    ),
+                                    PopupMenuDivider(),
+                                    PopupMenuItem(
+                                      value: 'delete',
+                                      child: Text('Delete'),
                                     ),
                                   ],
                                 ),

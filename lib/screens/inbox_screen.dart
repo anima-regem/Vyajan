@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../components/curate_link_sheet.dart';
+import '../components/link_details_sheet.dart';
 import '../components/thumbnail.dart';
 import '../models/link_item.dart';
 import '../providers/app_providers.dart';
@@ -45,6 +46,15 @@ class InboxScreen extends ConsumerWidget {
     );
   }
 
+  Future<void> _showDetails(
+    BuildContext context,
+    LinkItem link,
+  ) async {
+    await HapticFeedback.selectionClick();
+    if (!context.mounted) return;
+    await showLinkDetailsSheet(context, link);
+  }
+
   Future<void> _archiveWithUndo(
     BuildContext context,
     WidgetRef ref,
@@ -65,6 +75,49 @@ class InboxScreen extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  Future<void> _deleteLink(
+    BuildContext context,
+    WidgetRef ref,
+    LinkItem link,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Delete link?'),
+          content: const Text(
+            'This removes the link permanently from your workspace.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('Delete'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed != true) return;
+
+    try {
+      await ref.read(linkActionsServiceProvider).deleteLink(link);
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Link deleted.')),
+      );
+    } catch (error) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.toString())),
+      );
+    }
   }
 
   Future<void> _snooze(
@@ -194,8 +247,16 @@ class InboxScreen extends ConsumerWidget {
                       await _archiveWithUndo(context, ref, link);
                       return;
                     }
+                    if (value == 'details') {
+                      await _showDetails(context, link);
+                      return;
+                    }
                     if (value == 'snooze') {
                       await _snooze(context, ref, link);
+                      return;
+                    }
+                    if (value == 'delete') {
+                      await _deleteLink(context, ref, link);
                       return;
                     }
                     if (value == 'open') {
@@ -216,8 +277,17 @@ class InboxScreen extends ConsumerWidget {
                       child: Text('Archive'),
                     ),
                     PopupMenuItem(
+                      value: 'details',
+                      child: Text('View details'),
+                    ),
+                    PopupMenuItem(
                       value: 'open',
                       child: Text('Open'),
+                    ),
+                    PopupMenuDivider(),
+                    PopupMenuItem(
+                      value: 'delete',
+                      child: Text('Delete'),
                     ),
                   ],
                 ),

@@ -134,4 +134,12 @@ class LinkActionsService {
       parameters: {'count': ids.length},
     );
   }
+
+  Future<void> deleteLink(LinkItem link) async {
+    await _linkRepository.deleteLink(link.id);
+    await _analyticsService.logEssentialEvent(
+      'link_deleted',
+      parameters: {'status': link.status.value},
+    );
+  }
 }

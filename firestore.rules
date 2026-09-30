@@ -12,14 +12,16 @@ service cloud.firestore {
     match /links/{linkId} {
       allow read: if isOwner(resource.data.userId);
       allow create: if isOwner(request.resource.data.userId);
-      allow update: if isOwner(resource.data.userId);
+      allow update: if isOwner(resource.data.userId)
+        && request.resource.data.userId == resource.data.userId;
       allow delete: if isOwner(resource.data.userId);
     }
 
     match /collections/{collectionId} {
       allow read: if isOwner(resource.data.userId);
       allow create: if isOwner(request.resource.data.userId);
-      allow update: if isOwner(resource.data.userId);
+      allow update: if isOwner(resource.data.userId)
+        && request.resource.data.userId == resource.data.userId;
       allow delete: if isOwner(resource.data.userId);
     }
 
